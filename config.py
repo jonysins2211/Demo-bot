@@ -29,15 +29,15 @@ OWNER_ID = int(os.environ.get("OWNER_ID", "949657126")) # Owner id
 #--------------------------------------------
 PORT = os.environ.get("PORT", "8001")
 #--------------------------------------------
-DB_URI = os.environ.get("DATABASE_URL", "mongodb+srv://avatarr112200:6pnK1K3d1Gg9CaIW@cluster0.nmglsmd.mongodb.net/?appName=Cluster0")
-DB_NAME = os.environ.get("DATABASE_NAME", "avatar11220")
+DB_URI = os.environ.get("DATABASE_URL", "mongodb+srv://johnmawa:2.de5ckkYQVC#8f@cluster0.haayhop.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0")
+DB_NAME = os.environ.get("DATABASE_NAME", "johnmawa")
 #--------------------------------------------
 FSUB_LINK_EXPIRY = int(os.getenv("FSUB_LINK_EXPIRY", "10"))  # 0 means no expiry
 BAN_SUPPORT = os.environ.get("BAN_SUPPORT", "https://t.me/mladminbot")
-TG_BOT_WORKERS = int(os.environ.get("TG_BOT_WORKERS", "50"))
+TG_BOT_WORKERS = int(os.environ.get("TG_BOT_WORKERS", "150"))
 #--------------------------------------------
-START_PIC = os.environ.get("START_PIC", "https://i.ibb.co/Lz7GhcM6/photo-2025-10-11-15-50-42-7559992195944546380.jpg")
-FORCE_PIC = os.environ.get("FORCE_PIC", "https://telegra.ph/file/e292b12890b8b4b9dcbd1.jpg")
+START_PIC = os.environ.get("START_PIC", "https://i.ibb.co/hxYHF30b/photo-2026-03-10-13-33-57-7615619723304108064.jpg")
+FORCE_PIC = os.environ.get("FORCE_PIC", "https://i.ibb.co/B285sHH0/photo-2026-03-15-18-03-00-7617544491422973988.jpg")
 
 #--------------------------------------------
 SHORTLINK_URL = os.environ.get("SHORTLINK_URL", "linkshortify.com")
@@ -84,7 +84,7 @@ CMD_TXT = """<blockquote><b>» ᴀᴅᴍɪɴ ᴄᴏᴍᴍᴀɴᴅs:</b></blockqu
 <b>›› /delreq :</b> Rᴇᴍᴏᴠᴇᴅ ʟᴇғᴛᴏᴠᴇʀ ɴᴏɴ-ʀᴇǫᴜᴇsᴛ ᴜsᴇʀs
 """
 #--------------------------------------------
-CUSTOM_CAPTION = os.environ.get("CUSTOM_CAPTION", None) #set your Custom Caption here, Keep None for Disable Custom Caption
+CUSTOM_CAPTION = os.environ.get("CUSTOM_CAPTION", "{previouscaption}\n\n <b>• ʙʏ @Movie_Loverzz </b>") #set your Custom Caption here, Keep None for Disable Custom Caption
 PROTECT_CONTENT = True if os.environ.get('PROTECT_CONTENT', "False") == "True" else False #set True if you want to prevent users from forwarding files from bot
 #--------------------------------------------
 #Set true if you want Disable your Channel Posts Share button
@@ -96,8 +96,8 @@ USER_REPLY_TEXT = "ʙᴀᴋᴋᴀ ! ʏᴏᴜ ᴀʀᴇ ɴᴏᴛ ᴍʏ ꜱᴇɴᴘ
 #==========================(BUY PREMIUM)====================#
 
 OWNER_TAG = os.environ.get("OWNER_TAG", "Mladminbot")
-UPI_ID = os.environ.get("UPI_ID", "DM")
-QR_PIC = os.environ.get("QR_PIC", "https://i.ibb.co/Lz7GhcM6/photo-2025-10-11-15-50-42-7559992195944546380.jpg")
+UPI_ID = os.environ.get("UPI_ID", "movieloverz11220@okaxis")
+QR_PIC = os.environ.get("QR_PIC", "https://i.ibb.co/WWwXpXCF/photo-2026-03-15-08-31-55-7617397324368576532.jpg")
 SCREENSHOT_URL = os.environ.get("SCREENSHOT_URL", f"t.me/mladminbot")
 #--------------------------------------------
 #Time and its price
