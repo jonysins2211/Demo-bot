@@ -606,7 +606,7 @@ async def verify_fingerprint(request):
 # ======================== PROXY HANDLER ======================== #
 
 async def _proxy_content(request, hash_id):
-    """Fetch and stream content from the target URL."""
+    """Redirect to the target URL instead of proxying content."""
     base_id = hash_id.split('/')[0]
     entry = await db.get_masked_link(base_id)
 
@@ -614,37 +614,8 @@ async def _proxy_content(request, hash_id):
         return web.Response(text="Link not found or has been removed.", status=404)
 
     target_url = entry["target"]
-
-    async with aiohttp.ClientSession() as session:
-        try:
-            headers = {k: v for k, v in request.headers.items() 
-                      if k.lower() not in ['host', 'content-length']}
-            
-            async with session.request(
-                request.method, target_url, 
-                headers=headers, 
-                data=await request.read(),
-                auto_decompress=False
-            ) as resp:
-                response = web.StreamResponse(status=resp.status, reason=resp.reason)
-                
-                exclude_headers = ['content-length', 'transfer-encoding', 
-                                  'connection', 'strict-transport-security']
-                for k, v in resp.headers.items():
-                    if k.lower() not in exclude_headers:
-                        response.headers[k] = v
-                
-                await response.prepare(request)
-                
-                async for chunk in resp.content.iter_chunked(4096):
-                    await response.write(chunk)
-                
-                return response
-
-        except Exception as e:
-            return web.Response(text=f"Failed to fetch content: {e}", status=502)
-
-
+    raise web.HTTPFound(target_url)
+    
 # ======================== ERROR PAGES ======================== #
 
 def _bot_detected_page():
