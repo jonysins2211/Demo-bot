@@ -229,7 +229,7 @@ async def proxy_request(request):
         <head>
             <meta charset="UTF-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>Open in Chrome | Codeflix</title>
+            <title>Open in Chrome | MOVIE LOVERZ</title>
             <style>
                 :root {{ --primary: #00ff88; --bg: #0a0a0a; --card: #151515; }}
                 body {{ background: var(--bg); color: #fff; font-family: 'Segoe UI', sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; }}
@@ -246,7 +246,7 @@ async def proxy_request(request):
                 <h2>Open in Chrome</h2>
                 <p style="color:#888">This link requires Google Chrome.</p>
                 <a href="{intent_uri}" class="btn">Open in Chrome</a>
-                <div class="footer">Made by <span class="brand">Codeflix</span></div>
+                <div class="footer">Made by <span class="brand">MOVIE LOVERZ</span></div>
             </div>
         </body>
         </html>
@@ -277,7 +277,7 @@ async def proxy_request(request):
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Security Check | Codeflix</title>
+        <title>Security Check | MOVIE LOVERZ</title>
         <style>
             :root {{
                 --primary: #00ff88;
@@ -408,7 +408,7 @@ async def proxy_request(request):
             </div>
 
             <div class="footer">
-                Powered by <span class="brand">Codeflix</span> Security
+                Powered by <span class="brand">MOVIE LOVERZ</span> Security
             </div>
         </div>
 
