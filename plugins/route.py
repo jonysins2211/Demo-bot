@@ -621,7 +621,7 @@ async def _proxy_content(request, hash_id):
 def _bot_detected_page():
     html = """
     <!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Access Denied | Codeflix</title>
+    <title>Access Denied | Movie Loverz</title>
     <style>
         body { background: #0a0a0a; color: #fff; font-family: 'Segoe UI', sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; }
         .card { text-align: center; background: #151515; padding: 40px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); border: 1px solid #333; max-width: 380px; }
@@ -635,7 +635,7 @@ def _bot_detected_page():
         <div class="icon">🤖</div>
         <h2>Bot Detected</h2>
         <p>Automated access is not permitted.<br>Please use a real browser.</p>
-        <div class="footer">Protected by <span class="brand">Codeflix</span> Security</div>
+        <div class="footer">Protected by <span class="brand">MOVIE LOVERZ</span> Security</div>
     </div></body></html>
     """
     return web.Response(text=html, content_type='text/html', status=200)
@@ -690,7 +690,7 @@ def _vps_blocked_page():
 def _link_expired_page():
     html = """
     <!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Link Expired | Codeflix</title>
+    <title>Link Expired | MOVIE LOVERZ</title>
     <style>
         body { background: #0a0a0a; color: #fff; font-family: 'Segoe UI', sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; }
         .card { text-align: center; background: #151515; padding: 40px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); border: 1px solid #333; max-width: 380px; }
@@ -704,7 +704,7 @@ def _link_expired_page():
         <div class="icon">💀</div>
         <h2>Link Expired</h2>
         <p>This link has already been used and is no longer available.<br>Request a new link from the bot.</p>
-        <div class="footer">Protected by <span class="brand">Codeflix</span> Security</div>
+        <div class="footer">Protected by <span class="brand">MOVIE LOVERZ</span> Security</div>
     </div></body></html>
     """
     return web.Response(text=html, content_type='text/html', status=200)
