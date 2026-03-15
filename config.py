@@ -29,8 +29,8 @@ OWNER_ID = int(os.environ.get("OWNER_ID", "949657126")) # Owner id
 #--------------------------------------------
 PORT = os.environ.get("PORT", "8001")
 #--------------------------------------------
-DB_URI = os.environ.get("DATABASE_URL", "mongodb+srv://johnmawa:2.de5ckkYQVC#8f@cluster0.haayhop.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0")
-DB_NAME = os.environ.get("DATABASE_NAME", "johnmawa")
+DB_URI = os.environ.get("DATABASE_URL", "mongodb+srv://avatarr112200:6pnK1K3d1Gg9CaIW@cluster0.nmglsmd.mongodb.net/?appName=Cluster0")
+DB_NAME = os.environ.get("DATABASE_NAME", "avatar11220")
 #--------------------------------------------
 FSUB_LINK_EXPIRY = int(os.getenv("FSUB_LINK_EXPIRY", "10"))  # 0 means no expiry
 BAN_SUPPORT = os.environ.get("BAN_SUPPORT", "https://t.me/mladminbot")
@@ -40,14 +40,14 @@ START_PIC = os.environ.get("START_PIC", "https://i.ibb.co/Lz7GhcM6/photo-2025-10
 FORCE_PIC = os.environ.get("FORCE_PIC", "https://telegra.ph/file/e292b12890b8b4b9dcbd1.jpg")
 
 #--------------------------------------------
-SHORTLINK_URL = os.environ.get("SHORTLINK_URL", "arolinks.com")
-SHORTLINK_API = os.environ.get("SHORTLINK_API", "b45f8f81a9b97173588484df25715cb97b4d3fb1")
+SHORTLINK_URL = os.environ.get("SHORTLINK_URL", "linkshortify.com")
+SHORTLINK_API = os.environ.get("SHORTLINK_API", "a27e6b177c47ce6a7b22bcbce2235ce66d893ac8")
 VERIFY_EXPIRE = int(os.environ.get('VERIFY_EXPIRE', 43200)) # Add time in seconds
 
 # Shortener link masking — set to your deployed app URL
-BASE_URL = os.environ.get("BASE_URL", "https://your-app.koyeb.app/")
+BASE_URL = os.environ.get("BASE_URL", "https://frantic-marijo-wickson-2faa9b4a.koyeb.app/")
 # Secret key for hash algorithms — keep private
-HASH_SECRET_KEY = os.environ.get("HASH_SECRET_KEY", "")
+HASH_SECRET_KEY = os.environ.get("HASH_SECRET_KEY", "aX7q2mN9pK4rT8vL3eW6sH1bD5cF0jZ2")
 TUT_VID = os.environ.get("TUT_VID","https://t.me/ML_Files/17")
 
 #--------------------------------------------
