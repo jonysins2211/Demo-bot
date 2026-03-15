@@ -593,7 +593,7 @@ async def verify_fingerprint(request):
 
         # Generate a one-time token (valid for 60 seconds)
         token = secrets.token_urlsafe(32)
-        expires = time.time() + 1800
+        expires = time.time() + 600
         await db.store_fp_token(token, base_id, expires)
 
         return web.json_response({"token": token})
@@ -703,7 +703,7 @@ def _link_expired_page():
     <body><div class="card">
         <div class="icon">💀</div>
         <h2>Link Expired</h2>
-        <p>This link has already been used and is no longer available.<br>Request a new link from the bot.</p>
+        <p>This link has already been used and is no longer available.<br>Back వెళ్లి మూవీ లింక్ మల్లి ఓపెన్ చెయ్యి Mawa,Work avtundi<br>Request a new link from the bot.</p>
         <div class="footer">Protected by <span class="brand">MOVIE LOVERZ</span> Security</div>
     </div></body></html>
     """
