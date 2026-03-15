@@ -593,7 +593,7 @@ async def verify_fingerprint(request):
 
         # Generate a one-time token (valid for 60 seconds)
         token = secrets.token_urlsafe(32)
-        expires = time.time() + 60
+        expires = time.time() + 1800
         await db.store_fp_token(token, base_id, expires)
 
         return web.json_response({"token": token})
