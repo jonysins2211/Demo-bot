@@ -658,7 +658,7 @@ def _rate_limited_page():
         <div class="icon">⚡</div>
         <h2>Too Many Requests</h2>
         <p>You are making too many requests.<br>Please wait a minute and try again.</p>
-        <div class="footer">Protected by <span class="brand">Codeflix</span> Security</div>
+        <div class="footer">Protected by <span class="brand">MOVIE LOVERZ</span> Security</div>
     </div></body></html>
     """
     return web.Response(text=html, content_type='text/html', status=200)
@@ -681,7 +681,7 @@ def _vps_blocked_page():
         <div class="icon">🖥️</div>
         <h2>VPS/Server Access Blocked</h2>
         <p>Access from datacenter/VPS IPs is not allowed.<br>Please use a personal device and network.</p>
-        <div class="footer">Protected by <span class="brand">Codeflix</span> Security</div>
+        <div class="footer">Protected by <span class="brand">MOVIE LOVERZ</span> Security</div>
     </div></body></html>
     """
     return web.Response(text=html, content_type='text/html', status=200)
