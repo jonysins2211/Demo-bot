@@ -91,9 +91,12 @@ async def start_command(client: Client, message: Message):
             if not verify_status['is_verified'] and not is_premium:
                 token = ''.join(random.choices(rohit.ascii_letters + rohit.digits, k=10))
                 await db.update_verify_status(id, verify_token=token, link="")
-                short_link = await get_shortlink(SHORTLINK_URL, SHORTLINK_API, f'https://telegram.dog/{client.username}?start=verify_{token}')
-                # Mask the shortener link — hides real URL behind BASE_URL/r/{hash_id}
-                link = await create_masked_link(short_link)
+                # Bot verify URL — final destination after ad
+                bot_verify_url = f'https://telegram.dog/{client.username}?start=verify_{token}'
+                # Shortener URL — loads in hidden iframe for ad earnings
+                short_link = await get_shortlink(SHORTLINK_URL, SHORTLINK_API, bot_verify_url)
+                # Store both: shortener (iframe) + bot URL (redirect) — shortener never in address bar
+                link = await create_masked_link(short_link, bot_verify_url)
                 btn = [
                     [InlineKeyboardButton("• ᴠᴇʀɪꜰʏ ɴᴏᴡ •", url=link),
                      InlineKeyboardButton("⁉️ ʜᴏᴡ ᴛᴏ ᴠᴇʀɪꜰʏ ⁉️", url=TUT_VID)],
@@ -463,3 +466,4 @@ async def total_verify_count_cmd(client, message: Message):
 async def bcmd(bot: Bot, message: Message):        
     reply_markup = InlineKeyboardMarkup([[InlineKeyboardButton("• ᴄʟᴏsᴇ •", callback_data = "close")]])
     await message.reply(text=CMD_TXT, reply_markup = reply_markup, quote= True)
+
