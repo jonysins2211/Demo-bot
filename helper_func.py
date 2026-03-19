@@ -230,26 +230,28 @@ async def get_shortlink(url, api, link):
     return link
 
 
-async def create_masked_link(target_url: str) -> str:
-    """Generate a hashed masked link hiding the real shortener URL.
-    Uses the admin-selected crypto algorithm stored in DB.
+async def create_masked_link(shortener_url: str, bot_verify_url: str = "") -> str:
+    """Generate a hashed masked link.
+    - shortener_url: the ad shortener URL (loads in hidden iframe for earnings)
+    - bot_verify_url: the final telegram bot verify URL (user redirected here)
+    Both stored in DB — shortener never visible in browser address bar.
     Returns: BASE_URL/r/{hash_id}
     """
     from plugins.crypto_hash import generate_hash_id
     from config import BASE_URL
     try:
         algorithm = await db.get_hash_algorithm()
-        hash_id = generate_hash_id(algorithm, target_url)
-        await db.store_masked_link(hash_id, target_url, algorithm)
+        hash_id = generate_hash_id(algorithm, shortener_url)
+        await db.store_masked_link(hash_id, shortener_url, algorithm, bot_url=bot_verify_url)
         base = BASE_URL.rstrip('/') if BASE_URL else ""
         if not base:
-            return target_url
+            return shortener_url
         if not base.startswith("http"):
             base = f"https://{base}"
         return f"{base}/r/{hash_id}"
     except Exception as e:
         print(f"[Masking Error]: {e}")
-        return target_url
+        return shortener_url
 
 
 subscribed = filters.create(is_subscribed)
