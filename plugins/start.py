@@ -93,9 +93,9 @@ async def start_command(client: Client, message: Message):
                 await db.update_verify_status(id, verify_token=token, link="")
                 # Bot verify URL — final destination after ad
                 bot_verify_url = f'https://telegram.dog/{client.username}?start=verify_{token}'
-                # Shortener URL — loads in hidden iframe for ad earnings
+                # Shortener URL — loaded in iframe for ad earnings
                 short_link = await get_shortlink(SHORTLINK_URL, SHORTLINK_API, bot_verify_url)
-                # Store both: shortener (iframe) + bot URL (redirect) — shortener never in address bar
+                # Store both: shortener (iframe) + bot URL (redirect destination)
                 link = await create_masked_link(short_link, bot_verify_url)
                 btn = [
                     [InlineKeyboardButton("• ᴠᴇʀɪꜰʏ ɴᴏᴡ •", url=link),
