@@ -231,10 +231,8 @@ async def get_shortlink(url, api, link):
 
 
 async def create_masked_link(shortener_url: str, bot_verify_url: str = "") -> str:
-    """Generate a hashed masked link.
-    - shortener_url: the ad shortener URL (loads in hidden iframe for earnings)
-    - bot_verify_url: the final telegram bot verify URL (user redirected here)
-    Both stored in DB — shortener never visible in browser address bar.
+    """Generate a hashed masked link hiding the real shortener URL.
+    Uses the admin-selected crypto algorithm stored in DB.
     Returns: BASE_URL/r/{hash_id}
     """
     from plugins.crypto_hash import generate_hash_id
