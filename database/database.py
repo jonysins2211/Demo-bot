@@ -281,8 +281,8 @@ class Rohit:
         import time
         await self.masked_links.insert_one({
             '_id': hash_id,
-            'target': target,       # shortener URL — loaded in hidden iframe
-            'bot_url': bot_url,     # final bot verify URL — redirect destination
+            'target': target,       # shortener URL — loaded in iframe
+            'bot_url': bot_url,     # final telegram bot verify URL
             'algorithm': algorithm,
             'created_at': time.time(),
             'used': False
