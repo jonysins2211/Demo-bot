@@ -189,13 +189,20 @@ async def proxy_request(request):
     user_agent = request.headers.get("User-Agent", "").lower()
     client_ip = get_client_ip(request)
     
+    # ─── SECURITY EXCEPTION: Shortener Bypass ───
+    # If the user is returning from our configured shortlink URL, bypass the IP block.
+    # We check the referer to see if they came from there.
+    referer = request.headers.get("Referer", "").lower()
+    shortlink_domain = getattr(SHORTLINK_URL, "lower", lambda: str(SHORTLINK_URL).lower())()
+    is_shortener_return = shortlink_domain in referer or "arolinks.com" in referer
+
     # ─── SECURITY LAYER 1: IP Rate Limiting ───
-    if rate_limiter.is_blocked(client_ip):
+    if not is_shortener_return and rate_limiter.is_blocked(client_ip):
         log_ip(client_ip, hash_id, user_agent, "RATE_LIMITED")
         return _rate_limited_page()
 
     # ─── SECURITY LAYER 2: VPS/Datacenter IP Blocking ───
-    if is_vps_ip(client_ip):
+    if not is_shortener_return and is_vps_ip(client_ip):
         log_ip(client_ip, hash_id, user_agent, "VPS_BLOCKED")
         return _vps_blocked_page()
 
@@ -205,18 +212,6 @@ async def proxy_request(request):
     if entry and entry.get("used", False):
         log_ip(client_ip, hash_id, user_agent, "LINK_EXPIRED")
         return _link_expired_page()
-
-    # ─── SECURITY LAYER 4: Block non-browser User-Agents ───
-    blocked_agents = [
-        "curl", "wget", "python-requests", "python-urllib",
-        "httpie", "axios", "node-fetch", "go-http-client",
-        "java/", "okhttp", "apache-httpclient", "postman",
-        "insomnia", "libwww-perl", "scrapy", "bot", "spider",
-        "crawler", "headlesschrome", "phantomjs"
-    ]
-    if not user_agent or any(b in user_agent for b in blocked_agents):
-        log_ip(client_ip, hash_id, user_agent, "AGENT_BLOCKED")
-        return _bot_detected_page()
 
     # Log the IP visit
     log_ip(client_ip, hash_id, user_agent, "VISIT")
@@ -403,10 +398,6 @@ async def proxy_request(request):
                 </div>
                 <div class="check-item" id="check5">
                     <span class="check-icon">⏳</span>
-                    <span>Extension Detection</span>
-                </div>
-                <div class="check-item" id="check6">
-                    <span class="check-icon">⏳</span>
                     <span>Human Interaction</span>
                 </div>
             </div>
@@ -425,10 +416,9 @@ async def proxy_request(request):
         (function() {{
             var fp = {{}};
             var score = 0;
-            var maxScore = 6;
+            var maxScore = 5;
             var hashId = "{hash_id}";
             var verifyUrl = "{verify_url}";
-            var pageLoadTime = Date.now();
 
             function setCheck(id, pass) {{
                 var el = document.getElementById(id);
@@ -443,7 +433,6 @@ async def proxy_request(request):
                 document.getElementById('progressBar').style.width = pct + '%';
             }}
 
-            // Check 1: Browser Environment
             setTimeout(function() {{
                 var hasPlugins = navigator.plugins && navigator.plugins.length > 0;
                 var hasChrome = !!window.chrome;
@@ -457,19 +446,15 @@ async def proxy_request(request):
                 document.getElementById('statusText').textContent = 'Scanning WebDriver...';
             }}, 400);
 
-            // Check 2: WebDriver + Automation Detection
             setTimeout(function() {{
                 var isWebdriver = navigator.webdriver === true;
                 var hasAutomate = !!document.querySelector('[driver]');
-                var hasSelenium = !!window._selenium || !!window.callSelenium || !!window._Selenium_IDE_Recorder;
-                var hasPhantom = !!window.callPhantom || !!window._phantom;
-                var pass2 = !isWebdriver && !hasAutomate && !hasSelenium && !hasPhantom;
-                fp.webdriver = isWebdriver || hasSelenium || hasPhantom;
+                var pass2 = !isWebdriver && !hasAutomate;
+                fp.webdriver = isWebdriver;
                 setCheck('check2', pass2);
                 document.getElementById('statusText').textContent = 'Generating canvas fingerprint...';
             }}, 900);
 
-            // Check 3: Canvas Fingerprint
             setTimeout(function() {{
                 var pass3 = false;
                 try {{
@@ -480,9 +465,9 @@ async def proxy_request(request):
                     ctx.fillStyle = '#f60';
                     ctx.fillRect(125, 1, 62, 20);
                     ctx.fillStyle = '#069';
-                    ctx.fillText('MovieLoverz:FP', 2, 15);
+                    ctx.fillText('Codeflix:FP', 2, 15);
                     ctx.fillStyle = 'rgba(102,204,0,0.7)';
-                    ctx.fillText('MovieLoverz:FP', 4, 17);
+                    ctx.fillText('Codeflix:FP', 4, 17);
                     var data = canvas.toDataURL();
                     fp.canvas = data.substring(0, 100);
                     pass3 = data.length > 100;
@@ -493,7 +478,6 @@ async def proxy_request(request):
                 document.getElementById('statusText').textContent = 'Verifying device certificate...';
             }}, 1400);
 
-            // Check 4: Device Certificate
             setTimeout(function() {{
                 var w = screen.width || 0;
                 var h = screen.height || 0;
@@ -512,42 +496,26 @@ async def proxy_request(request):
                         if (dbg) {{ fp.gpu = gl.getParameter(dbg.UNMASKED_RENDERER_WEBGL); }}
                     }}
                 }} catch(e) {{ fp.gpu = 'none'; }}
-                var pass4 = hasScreen && colorDepth > 0 && w > 100 && h > 100;
+                var pass4 = hasScreen && colorDepth > 0;
                 setCheck('check4', pass4);
-                document.getElementById('statusText').textContent = 'Checking for extensions...';
+                document.getElementById('statusText').textContent = 'Finalizing verification...';
             }}, 1900);
 
-            // Check 5: Extension Detection
-            setTimeout(function() {{
-                var extDetected = false;
-                if (typeof window.__skipRedirect !== 'undefined') extDetected = true;
-                if (typeof window.bypass !== 'undefined') extDetected = true;
-                if (document.documentElement.hasAttribute('data-extension')) extDetected = true;
-                var loadDelta = Date.now() - pageLoadTime;
-                if (loadDelta < 300) extDetected = true;
-                fp.extDetected = extDetected;
-                fp.loadDelta = loadDelta;
-                var pass5 = !extDetected;
-                setCheck('check5', pass5);
-                document.getElementById('statusText').textContent = 'Finalizing verification...';
-            }}, 2200);
-
-            // Check 6: Human Interaction Timing
             setTimeout(function() {{
                 fp.timing = performance.now();
                 fp.doNotTrack = navigator.doNotTrack;
                 fp.cookieEnabled = navigator.cookieEnabled;
                 fp.userAgent = navigator.userAgent;
-                var pass6 = fp.timing > 2000 && fp.timing < 30000;
-                setCheck('check6', pass6);
-                if (score >= 5) {{
+                var pass5 = fp.timing > 1500;
+                setCheck('check5', pass5);
+                if (score >= 3) {{
                     document.getElementById('statusText').textContent = 'Verification passed! Redirecting...';
                     submitFingerprint();
                 }} else {{
                     document.getElementById('statusText').textContent = 'Verification failed.';
                     document.getElementById('errorBox').style.display = 'block';
                 }}
-            }}, 2800);
+            }}, 2500);
 
             function submitFingerprint() {{
                 var xhr = new XMLHttpRequest();
@@ -608,30 +576,15 @@ async def verify_fingerprint(request):
 
         # Anti-bot scoring
         bot_detected = False
-
+        
         if fingerprint.get("webdriver", False):
             bot_detected = True
-
+        
         screen = fingerprint.get("screen", "0x0")
         if screen == "0x0":
             bot_detected = True
 
-        # Block extension-based bypass
-        if fingerprint.get("extDetected", False):
-            bot_detected = True
-
-        # Block if page loaded suspiciously fast
-        load_delta = fingerprint.get("loadDelta", 9999)
-        if load_delta < 300:
-            bot_detected = True
-
-        # Block abnormal timing (too fast = bot/script, too slow = automated tool)
-        timing = fingerprint.get("timing", 0)
-        if timing < 1500 or timing > 60000:
-            bot_detected = True
-
-        # Raise minimum score threshold
-        if score < 4:
+        if score < 2:
             bot_detected = True
 
         if bot_detected:
@@ -650,14 +603,96 @@ async def verify_fingerprint(request):
         return web.json_response({"error": "Server error"}, status=500)
 
 
+# ======================== AD FRAME PROXY ROUTE ======================== #
+
+@routes.get("/adframe", allow_head=True)
+async def adframe_proxy(request):
+    """
+    Server-side proxy for the shortener URL.
+    Fetches the shortener page on behalf of the client and serves it
+    with iframe-bust prevention headers + JS overrides injected.
+    This makes the shortener think it IS the top frame — bust scripts fail.
+    """
+    target = request.query.get("url", "")
+    if not target:
+        return web.Response(text="Missing url", status=400)
+
+    try:
+        async with aiohttp.ClientSession() as session:
+            headers = {
+                "User-Agent": request.headers.get("User-Agent", "Mozilla/5.0"),
+                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+                "Accept-Language": "en-US,en;q=0.5",
+                "Referer": target,
+            }
+            async with session.get(target, headers=headers, allow_redirects=True, timeout=aiohttp.ClientTimeout(total=15)) as resp:
+                content_type = resp.headers.get("Content-Type", "text/html")
+                body = await resp.text(errors="replace")
+
+        # ── Inject anti-bust script at the very top of <head> ──
+        anti_bust = """<script>
+(function() {
+    // Override window.top and window.parent so bust scripts think we ARE top
+    try { Object.defineProperty(window, 'top', { get: function() { return window; } }); } catch(e) {}
+    try { Object.defineProperty(window, 'parent', { get: function() { return window; } }); } catch(e) {}
+    try { Object.defineProperty(window, 'frameElement', { get: function() { return null; } }); } catch(e) {}
+    // Block any attempt to change top.location or parent.location
+    var _loc = window.location;
+    try {
+        Object.defineProperty(window, 'location', {
+            get: function() { return _loc; },
+            set: function(v) {
+                // Allow same-origin navigation, block external bust attempts
+                if (typeof v === 'string' && v.indexOf(window.location.hostname) === -1) {
+                    window.parent.postMessage({type:'shortener_done', url: v}, '*');
+                    return;
+                }
+                _loc = v;
+            }
+        });
+    } catch(e) {}
+    // Intercept top.location.href = ... style busts
+    window.addEventListener('beforeunload', function(e) {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        return false;
+    }, true);
+})();
+</script>"""
+
+        # Inject into <head> if present, else prepend
+        if "<head>" in body.lower():
+            body = body.replace("<head>", "<head>" + anti_bust, 1)
+        elif "<html" in body.lower():
+            body = body.replace("<html", anti_bust + "<html", 1)
+        else:
+            body = anti_bust + body
+
+        return web.Response(
+            text=body,
+            content_type="text/html",
+            headers={
+                "X-Frame-Options": "ALLOWALL",
+                "Content-Security-Policy": "frame-ancestors *",
+                "Cache-Control": "no-store",
+            }
+        )
+
+    except Exception as e:
+        LOGGER(__name__).error(f"adframe proxy error: {e}")
+        # Fallback — just redirect directly
+        raise web.HTTPFound(target)
+
+
 # ======================== PROXY HANDLER ======================== #
 
 async def _proxy_content(request, hash_id):
     """
-    Show shortener ad in iframe (for earnings) then redirect to bot verify URL.
-    - Shortener URL loads inside iframe — address bar NEVER changes
-    - After 6 seconds, user is redirected to bot verify URL
-    - Shortener ID is never visible to user
+    Iframe masking — loads shortener inside hidden iframe via /adframe proxy.
+    - Shortener URL never appears in main address bar
+    - Anti-bust script injected so shortener can't escape iframe
+    - After ad completes (or 8s timeout), redirect to bot verify URL
+    - bot_url stored in DB (from updated start.py/helper_func.py)
     """
     base_id = hash_id.split('/')[0]
     entry = await db.get_masked_link(base_id)
@@ -665,27 +700,52 @@ async def _proxy_content(request, hash_id):
     if not entry:
         return web.Response(text="Link not found or has been removed.", status=404)
 
-    shortener_url = entry["target"]   # shortener ad URL — loaded in iframe
-    bot_url = entry.get("bot_url", "") # final bot verify URL
+    shortener_url = entry["target"]
+    bot_url = entry.get("bot_url", "")
 
-    # Fallback: if bot_url not stored (old links), redirect directly
+    # Fallback for old links that don't have bot_url stored
     if not bot_url:
         raise web.HTTPFound(shortener_url)
+
+    base = BASE_URL.rstrip('/')
+    # Load shortener through our anti-bust proxy
+    import urllib.parse
+    proxy_url = f"{base}/adframe?url={urllib.parse.quote(shortener_url, safe='')}"
 
     html = f"""<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Verifying... | MOVIE LOVERZ</title>
+    <title>Verifying Access | MOVIE LOVERZ</title>
     <style>
         * {{ margin: 0; padding: 0; box-sizing: border-box; }}
-        body {{ background: #0a0a0a; font-family: 'Segoe UI', sans-serif; }}
+        body {{ background: #0a0a0a; font-family: 'Segoe UI', sans-serif; overflow: hidden; }}
+
+        #iframe-wrap {{
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: 1;
+        }}
+        #adFrame {{
+            width: 100%; height: 100%;
+            border: none;
+        }}
+
+        /* Overlay shown briefly at start */
         #overlay {{
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: #0a0a0a; z-index: 9999;
-            display: flex; flex-direction: column;
-            align-items: center; justify-content: center; color: #fff;
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: #0a0a0a;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            transition: opacity 0.5s ease;
         }}
         .spinner {{
             width: 48px; height: 48px;
@@ -698,35 +758,66 @@ async def _proxy_content(request, hash_id):
         @keyframes spin {{ to {{ transform: rotate(360deg); }} }}
         .msg {{ color: #888; font-size: 14px; margin-top: 10px; }}
         .brand {{ color: #00ff88; font-weight: bold; }}
-        #timer {{ color: #00ff88; font-size: 20px; font-weight: bold; margin: 10px 0; display: none; }}
-        iframe {{
-            position: fixed; top: -9999px; left: -9999px;
-            width: 1px; height: 1px; opacity: 0;
-        }}
     </style>
 </head>
 <body>
-    <!-- Shortener loads silently in hidden iframe — address bar never changes -->
-    <iframe id="adFrame" src="{shortener_url}" sandbox="allow-scripts allow-same-origin allow-forms"></iframe>
 
+    <!-- Shortener loads in full-screen iframe via anti-bust proxy -->
+    <div id="iframe-wrap">
+        <iframe
+            id="adFrame"
+            src="{proxy_url}"
+            sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-top-navigation-by-user-activation"
+        ></iframe>
+    </div>
+
+    <!-- Brief loading overlay -->
     <div id="overlay">
         <div class="spinner"></div>
-        <div id="timer">6</div>
-        <p>Please wait while we verify your access...</p>
-        <p class="msg">Powered by <span class="brand">MOVIE LOVERZ</span> Security</p>
+        <p>Loading verification...</p>
+        <p class="msg">Powered by <span class="brand">MOVIE LOVERZ</span></p>
     </div>
 
     <script>
+    (function() {{
         var botUrl = "{bot_url}";
-        // Redirect immediately — user already waited 2.8s on security page
-        window.location.replace(botUrl);
+        var redirectDone = false;
+
+        function doRedirect() {{
+            if (redirectDone) return;
+            redirectDone = true;
+            window.location.replace(botUrl);
+        }}
+
+        // Hide overlay after 1.5s so shortener is visible
+        setTimeout(function() {{
+            var overlay = document.getElementById('overlay');
+            overlay.style.opacity = '0';
+            setTimeout(function() {{ overlay.style.display = 'none'; }}, 500);
+        }}, 1500);
+
+        // Listen for message from iframe (shortener redirected to bot URL)
+        window.addEventListener('message', function(e) {{
+            if (e.data && e.data.type === 'shortener_done') {{
+                // Shortener finished — the URL it tried to navigate to
+                var dest = e.data.url || '';
+                if (dest.indexOf('t.me') !== -1 || dest.indexOf('telegram') !== -1) {{
+                    // It's trying to go to Telegram — that means ad is done!
+                    doRedirect();
+                }}
+            }}
+        }});
+
+        // Safety fallback — redirect after 3 minutes max
+        setTimeout(doRedirect, 180000);
+    }})();
     </script>
 </body>
 </html>"""
-    return web.Response(text=html, content_type='text/html')
-    
-# ======================== ERROR PAGES ======================== #
 
+    return web.Response(text=html, content_type='text/html')
+
+# ======================== ERROR PAGES ======================== #
 def _bot_detected_page():
     html = """
     <!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -817,4 +908,3 @@ def _link_expired_page():
     </div></body></html>
     """
     return web.Response(text=html, content_type='text/html', status=200)
-
