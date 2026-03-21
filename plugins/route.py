@@ -603,184 +603,29 @@ async def verify_fingerprint(request):
         return web.json_response({"error": "Server error"}, status=500)
 
 
-# ======================== AD FRAME PROXY ROUTE ======================== #
-
-@routes.get("/adframe", allow_head=True)
-async def adframe_proxy(request):
-    """
-    Server-side proxy for the shortener URL.
-    Fetches the shortener page on behalf of the client and serves it
-    with iframe-bust prevention headers + JS overrides injected.
-    This makes the shortener think it IS the top frame — bust scripts fail.
-    """
-    target = request.query.get("url", "")
-    if not target:
-        return web.Response(text="Missing url", status=400)
-
-    try:
-        async with aiohttp.ClientSession() as session:
-            headers = {
-                "User-Agent": request.headers.get("User-Agent", "Mozilla/5.0"),
-                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-                "Accept-Language": "en-US,en;q=0.5",
-                "Referer": target,
-            }
-            async with session.get(target, headers=headers, allow_redirects=True, timeout=aiohttp.ClientTimeout(total=15)) as resp:
-                content_type = resp.headers.get("Content-Type", "text/html")
-                body = await resp.text(errors="replace")
-
-        # ── Inject anti-bust script at the very top of <head> ──
-        anti_bust = """<script>
-(function() {
-    // Override window.top and window.parent so bust scripts think we ARE top
-    try { Object.defineProperty(window, 'top', { get: function() { return window; } }); } catch(e) {}
-    try { Object.defineProperty(window, 'parent', { get: function() { return window; } }); } catch(e) {}
-    try { Object.defineProperty(window, 'frameElement', { get: function() { return null; } }); } catch(e) {}
-    // Block any attempt to change top.location or parent.location
-    var _loc = window.location;
-    try {
-        Object.defineProperty(window, 'location', {
-            get: function() { return _loc; },
-            set: function(v) {
-                // Allow same-origin navigation, block external bust attempts
-                if (typeof v === 'string' && v.indexOf(window.location.hostname) === -1) {
-                    window.parent.postMessage({type:'shortener_done', url: v}, '*');
-                    return;
-                }
-                _loc = v;
-            }
-        });
-    } catch(e) {}
-    // Intercept top.location.href = ... style busts
-    window.addEventListener('beforeunload', function(e) {
-        e.preventDefault();
-        e.stopImmediatePropagation();
-        return false;
-    }, true);
-})();
-</script>"""
-
-        # Inject into <head> if present, else prepend
-        if "<head>" in body.lower():
-            body = body.replace("<head>", "<head>" + anti_bust, 1)
-        elif "<html" in body.lower():
-            body = body.replace("<html", anti_bust + "<html", 1)
-        else:
-            body = anti_bust + body
-
-        return web.Response(
-            text=body,
-            content_type="text/html",
-            headers={
-                "X-Frame-Options": "ALLOWALL",
-                "Content-Security-Policy": "frame-ancestors *",
-                "Cache-Control": "no-store",
-            }
-        )
-
-    except Exception as e:
-        LOGGER(__name__).error(f"adframe proxy error: {e}")
-        # Fallback — just redirect directly
-        raise web.HTTPFound(target)
-
-
 # ======================== PROXY HANDLER ======================== #
 
 async def _proxy_content(request, hash_id):
-    """
-    Server-side shortener fetch — same approach as aioarea.vercel.app
-    - Server calls shortener URL directly (browser never sees it)
-    - Follows all redirects until telegram.dog/... URL found
-    - Browser redirected ONLY to telegram bot URL
-    - Shortener ID never visible in browser address bar
-    """
+    """JS redirect — hides shortener URL from address bar."""
     base_id = hash_id.split('/')[0]
     entry = await db.get_masked_link(base_id)
 
     if not entry:
         return web.Response(text="Link not found or has been removed.", status=404)
 
-    shortener_url = entry["target"]
-    bot_url = entry.get("bot_url", "")
+    target_url = entry["target"]
 
-    # ── Try server-side fetch to get final telegram URL ──
-    try:
-        import urllib.parse
-        telegram_url = None
-        visited = []
+    html = f"""<!DOCTYPE html>
+<html><head>
+<meta charset="UTF-8">
+<title>Redirecting...</title>
+<script>window.location.replace("{target_url}");</script>
+</head><body></body></html>"""
 
-        async with aiohttp.ClientSession() as session:
-            current_url = shortener_url
-            for _ in range(10):  # max 10 redirects
-                if current_url in visited:
-                    break
-                visited.append(current_url)
-
-                # Check if already a telegram URL
-                if "t.me" in current_url or "telegram.dog" in current_url or "telegram.me" in current_url:
-                    telegram_url = current_url
-                    break
-
-                try:
-                    async with session.get(
-                        current_url,
-                        allow_redirects=False,
-                        timeout=aiohttp.ClientTimeout(total=10),
-                        headers={
-                            "User-Agent": "Mozilla/5.0 (Linux; Android 12; Pixel 6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Mobile Safari/537.36",
-                            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-                            "Accept-Language": "en-US,en;q=0.5",
-                        }
-                    ) as resp:
-                        # Follow redirect manually
-                        if resp.status in (301, 302, 303, 307, 308):
-                            location = resp.headers.get("Location", "")
-                            if not location:
-                                break
-                            # Resolve relative URLs
-                            if location.startswith("/"):
-                                parsed = urllib.parse.urlparse(current_url)
-                                location = f"{parsed.scheme}://{parsed.netloc}{location}"
-                            current_url = location
-                            LOGGER(__name__).info(f"Following redirect: {current_url[:80]}")
-                        else:
-                            # Not a redirect — check body for meta refresh or JS redirect
-                            body = await resp.text(errors="replace")
-                            # Check meta refresh
-                            import re
-                            meta = re.search(r"<meta[^>]+url=([^<>\s]+)", body, re.IGNORECASE)
-                            if meta:
-                                current_url = meta.group(1).strip("'\"")
-                                continue
-                            # Check JS location redirect
-                            js_loc = re.search(r"(?:window\.location|location\.href)\s*=\s*[\x27\x22]([^\x27\x22]+)[\x27\x22]", body)
-                            if js_loc:
-                                current_url = js_loc.group(1)
-                                continue
-                            break
-                except Exception as e:
-                    LOGGER(__name__).error(f"Redirect follow error: {e}")
-                    break
-
-        if telegram_url:
-            LOGGER(__name__).info(f"Server-side fetch success: {telegram_url[:80]}")
-            raise web.HTTPFound(telegram_url)
-
-    except web.HTTPFound:
-        raise
-    except Exception as e:
-        LOGGER(__name__).error(f"Server-side fetch failed: {e}")
-
-    # ── Fallback: use stored bot_url if server-side fetch failed ──
-    if bot_url:
-        LOGGER(__name__).info("Using stored bot_url as fallback")
-        raise web.HTTPFound(bot_url)
-
-    # ── Last resort: redirect to shortener directly ──
-    raise web.HTTPFound(shortener_url)
-
-
+    return web.Response(text=html, content_type='text/html')
+    
 # ======================== ERROR PAGES ======================== #
+
 def _bot_detected_page():
     html = """
     <!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
