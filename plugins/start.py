@@ -1,4 +1,3 @@
-
 # Don't Remove Credit @CodeFlix_Bots, @rohit_1888
 # Ask Doubt on telegram @CodeflixSupport
 #
@@ -92,12 +91,9 @@ async def start_command(client: Client, message: Message):
             if not verify_status['is_verified'] and not is_premium:
                 token = ''.join(random.choices(rohit.ascii_letters + rohit.digits, k=10))
                 await db.update_verify_status(id, verify_token=token, link="")
-                # Bot verify URL — final destination after ad
-                bot_verify_url = f'https://telegram.dog/{client.username}?start=verify_{token}'
-                # Shortener URL — loaded in iframe for ad earnings
-                short_link = await get_shortlink(SHORTLINK_URL, SHORTLINK_API, bot_verify_url)
-                # Store both: shortener (iframe) + bot URL (redirect destination)
-                link = await create_masked_link(short_link, bot_verify_url)
+                short_link = await get_shortlink(SHORTLINK_URL, SHORTLINK_API, f'https://telegram.dog/{client.username}?start=verify_{token}')
+                # Mask the shortener link — hides real URL behind BASE_URL/r/{hash_id}
+                link = await create_masked_link(short_link)
                 btn = [
                     [InlineKeyboardButton("• ᴠᴇʀɪꜰʏ ɴᴏᴡ •", url=link),
                      InlineKeyboardButton("⁉️ ʜᴏᴡ ᴛᴏ ᴠᴇʀɪꜰʏ ⁉️", url=TUT_VID)],
