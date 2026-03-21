@@ -688,11 +688,11 @@ async def adframe_proxy(request):
 
 async def _proxy_content(request, hash_id):
     """
-    Iframe masking — loads shortener inside hidden iframe via /adframe proxy.
-    - Shortener URL never appears in main address bar
-    - Anti-bust script injected so shortener can't escape iframe
-    - After ad completes (or 8s timeout), redirect to bot verify URL
-    - bot_url stored in DB (from updated start.py/helper_func.py)
+    Server-side shortener fetch — same approach as aioarea.vercel.app
+    - Server calls shortener URL directly (browser never sees it)
+    - Follows all redirects until telegram.dog/... URL found
+    - Browser redirected ONLY to telegram bot URL
+    - Shortener ID never visible in browser address bar
     """
     base_id = hash_id.split('/')[0]
     entry = await db.get_masked_link(base_id)
@@ -703,119 +703,82 @@ async def _proxy_content(request, hash_id):
     shortener_url = entry["target"]
     bot_url = entry.get("bot_url", "")
 
-    # Fallback for old links that don't have bot_url stored
-    if not bot_url:
-        raise web.HTTPFound(shortener_url)
+    # ── Try server-side fetch to get final telegram URL ──
+    try:
+        import urllib.parse
+        telegram_url = None
+        visited = []
 
-    base = BASE_URL.rstrip('/')
-    # Load shortener through our anti-bust proxy
-    import urllib.parse
-    proxy_url = f"{base}/adframe?url={urllib.parse.quote(shortener_url, safe='')}"
+        async with aiohttp.ClientSession() as session:
+            current_url = shortener_url
+            for _ in range(10):  # max 10 redirects
+                if current_url in visited:
+                    break
+                visited.append(current_url)
 
-    html = f"""<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Verifying Access | MOVIE LOVERZ</title>
-    <style>
-        * {{ margin: 0; padding: 0; box-sizing: border-box; }}
-        body {{ background: #0a0a0a; font-family: 'Segoe UI', sans-serif; overflow: hidden; }}
+                # Check if already a telegram URL
+                if "t.me" in current_url or "telegram.dog" in current_url or "telegram.me" in current_url:
+                    telegram_url = current_url
+                    break
 
-        #iframe-wrap {{
-            position: fixed;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            z-index: 1;
-        }}
-        #adFrame {{
-            width: 100%; height: 100%;
-            border: none;
-        }}
+                try:
+                    async with session.get(
+                        current_url,
+                        allow_redirects=False,
+                        timeout=aiohttp.ClientTimeout(total=10),
+                        headers={
+                            "User-Agent": "Mozilla/5.0 (Linux; Android 12; Pixel 6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Mobile Safari/537.36",
+                            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+                            "Accept-Language": "en-US,en;q=0.5",
+                        }
+                    ) as resp:
+                        # Follow redirect manually
+                        if resp.status in (301, 302, 303, 307, 308):
+                            location = resp.headers.get("Location", "")
+                            if not location:
+                                break
+                            # Resolve relative URLs
+                            if location.startswith("/"):
+                                parsed = urllib.parse.urlparse(current_url)
+                                location = f"{parsed.scheme}://{parsed.netloc}{location}"
+                            current_url = location
+                            LOGGER(__name__).info(f"Following redirect: {current_url[:80]}")
+                        else:
+                            # Not a redirect — check body for meta refresh or JS redirect
+                            body = await resp.text(errors="replace")
+                            # Check meta refresh
+                            import re
+                            meta = re.search(r"<meta[^>]+url=([^<>\s]+)", body, re.IGNORECASE)
+                            if meta:
+                                current_url = meta.group(1).strip("'\"")
+                                continue
+                            # Check JS location redirect
+                            js_loc = re.search(r"(?:window\.location|location\.href)\s*=\s*[\x27\x22]([^\x27\x22]+)[\x27\x22]", body)
+                            if js_loc:
+                                current_url = js_loc.group(1)
+                                continue
+                            break
+                except Exception as e:
+                    LOGGER(__name__).error(f"Redirect follow error: {e}")
+                    break
 
-        /* Overlay shown briefly at start */
-        #overlay {{
-            position: fixed;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            background: #0a0a0a;
-            z-index: 9999;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            color: #fff;
-            transition: opacity 0.5s ease;
-        }}
-        .spinner {{
-            width: 48px; height: 48px;
-            border: 4px solid #333;
-            border-top: 4px solid #00ff88;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin-bottom: 20px;
-        }}
-        @keyframes spin {{ to {{ transform: rotate(360deg); }} }}
-        .msg {{ color: #888; font-size: 14px; margin-top: 10px; }}
-        .brand {{ color: #00ff88; font-weight: bold; }}
-    </style>
-</head>
-<body>
+        if telegram_url:
+            LOGGER(__name__).info(f"Server-side fetch success: {telegram_url[:80]}")
+            raise web.HTTPFound(telegram_url)
 
-    <!-- Shortener loads in full-screen iframe via anti-bust proxy -->
-    <div id="iframe-wrap">
-        <iframe
-            id="adFrame"
-            src="{proxy_url}"
-            sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-top-navigation-by-user-activation"
-        ></iframe>
-    </div>
+    except web.HTTPFound:
+        raise
+    except Exception as e:
+        LOGGER(__name__).error(f"Server-side fetch failed: {e}")
 
-    <!-- Brief loading overlay -->
-    <div id="overlay">
-        <div class="spinner"></div>
-        <p>Loading verification...</p>
-        <p class="msg">Powered by <span class="brand">MOVIE LOVERZ</span></p>
-    </div>
+    # ── Fallback: use stored bot_url if server-side fetch failed ──
+    if bot_url:
+        LOGGER(__name__).info("Using stored bot_url as fallback")
+        raise web.HTTPFound(bot_url)
 
-    <script>
-    (function() {{
-        var botUrl = "{bot_url}";
-        var redirectDone = false;
+    # ── Last resort: redirect to shortener directly ──
+    raise web.HTTPFound(shortener_url)
 
-        function doRedirect() {{
-            if (redirectDone) return;
-            redirectDone = true;
-            window.location.replace(botUrl);
-        }}
-
-        // Hide overlay after 1.5s so shortener is visible
-        setTimeout(function() {{
-            var overlay = document.getElementById('overlay');
-            overlay.style.opacity = '0';
-            setTimeout(function() {{ overlay.style.display = 'none'; }}, 500);
-        }}, 1500);
-
-        // Listen for message from iframe (shortener redirected to bot URL)
-        window.addEventListener('message', function(e) {{
-            if (e.data && e.data.type === 'shortener_done') {{
-                // Shortener finished — the URL it tried to navigate to
-                var dest = e.data.url || '';
-                if (dest.indexOf('t.me') !== -1 || dest.indexOf('telegram') !== -1) {{
-                    // It's trying to go to Telegram — that means ad is done!
-                    doRedirect();
-                }}
-            }}
-        }});
-
-        // Safety fallback — redirect after 3 minutes max
-        setTimeout(doRedirect, 180000);
-    }})();
-    </script>
-</body>
-</html>"""
-
-    return web.Response(text=html, content_type='text/html')
 
 # ======================== ERROR PAGES ======================== #
 def _bot_detected_page():
@@ -908,3 +871,4 @@ def _link_expired_page():
     </div></body></html>
     """
     return web.Response(text=html, content_type='text/html', status=200)
+
