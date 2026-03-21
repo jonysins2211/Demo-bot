@@ -230,7 +230,7 @@ async def get_shortlink(url, api, link):
     return link
 
 
-async def create_masked_link(shortener_url: str, bot_verify_url: str = "") -> str:
+async def create_masked_link(target_url: str) -> str:
     """Generate a hashed masked link hiding the real shortener URL.
     Uses the admin-selected crypto algorithm stored in DB.
     Returns: BASE_URL/r/{hash_id}
@@ -239,17 +239,17 @@ async def create_masked_link(shortener_url: str, bot_verify_url: str = "") -> st
     from config import BASE_URL
     try:
         algorithm = await db.get_hash_algorithm()
-        hash_id = generate_hash_id(algorithm, shortener_url)
-        await db.store_masked_link(hash_id, shortener_url, algorithm, bot_url=bot_verify_url)
+        hash_id = generate_hash_id(algorithm, target_url)
+        await db.store_masked_link(hash_id, target_url, algorithm)
         base = BASE_URL.rstrip('/') if BASE_URL else ""
         if not base:
-            return shortener_url
+            return target_url
         if not base.startswith("http"):
             base = f"https://{base}"
         return f"{base}/r/{hash_id}"
     except Exception as e:
         print(f"[Masking Error]: {e}")
-        return shortener_url
+        return target_url
 
 
 subscribed = filters.create(is_subscribed)
