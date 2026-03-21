@@ -277,12 +277,11 @@ class Rohit:
         return doc['value'] if doc else 'sha256'
 
     # ── Masked Links ─────────────────────────────────────────────────────
-    async def store_masked_link(self, hash_id: str, target: str, algorithm: str, bot_url: str = ""):
+    async def store_masked_link(self, hash_id: str, target: str, algorithm: str):
         import time
         await self.masked_links.insert_one({
             '_id': hash_id,
-            'target': target,       # shortener URL — loaded in iframe
-            'bot_url': bot_url,     # final telegram bot verify URL
+            'target': target,
             'algorithm': algorithm,
             'created_at': time.time(),
             'used': False
@@ -322,4 +321,3 @@ class Rohit:
 
 
 db = Rohit(DB_URI, DB_NAME)
-
