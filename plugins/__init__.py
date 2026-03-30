@@ -1,9 +1,15 @@
 #(©)Codexbotz
 #@iryme
 
+import sys
+import os
 
-
-
+# Add the project root to sys.path so FileStream package is always resolvable
+# This must happen here because plugins/__init__.py is imported before main.py
+# finishes executing (Koyeb/Docker run from /workspace)
+_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if _root not in sys.path:
+    sys.path.insert(0, _root)
 
 from aiohttp import web
 from .route import routes
