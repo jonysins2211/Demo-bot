@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ file_name }}</title>
+
+    <!-- Plyr player -->
+    <link rel="stylesheet" href="https://cdn.plyr.io/3.7.8/plyr.css" />
+
+    <!-- Bootstrap 5 -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Tailwind -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <style>
+        * { box-sizing: border-box; }
+        body { background: #0d0d0d; color: #f0f0f0; font-family: 'Segoe UI', sans-serif; margin: 0; }
+
+        /* ── Navbar ── */
+        .navbar-custom { background: #111; border-bottom: 1px solid #1f1f1f; padding: 12px 20px; }
+        .brand-text {
+            background: linear-gradient(90deg, #a855f7, #ec4899);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            font-weight: 700; font-size: 1.2rem;
+        }
+
+        /* ── Player wrapper ── */
+        .player-wrapper {
+            max-width: 900px; margin: 28px auto 0;
+            border-radius: 14px; overflow: hidden;
+            box-shadow: 0 8px 40px rgba(168,85,247,0.25);
+        }
+        .player-wrapper video,
+        .player-wrapper audio { width: 100%; display: block; }
+
+        /* ── File title ── */
+        .file-title {
+            max-width: 900px; margin: 16px auto 0;
+            font-size: 1rem; font-weight: 600;
+            color: #d1d5db; text-align: center; padding: 0 12px;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+
+        /* ── Info bar ── */
+        .info-bar {
+            max-width: 900px; margin: 8px auto 0;
+            display: flex; justify-content: center; gap: 16px;
+            flex-wrap: wrap; font-size: 0.78rem; color: #6b7280;
+        }
+        .info-bar span { display: flex; align-items: center; gap: 4px; }
+
+        /* ── Notice ── */
+        .notice {
+            max-width: 900px; margin: 12px auto 0;
+            padding: 10px 16px; background: #1c1c1c; border-left: 3px solid #f59e0b;
+            border-radius: 8px; font-size: 0.82rem; color: #9ca3af; text-align: center;
+        }
+
+        /* ── Play-with section ── */
+        .play-with-title {
+            max-width: 900px; margin: 24px auto 0;
+            font-size: 1rem; font-weight: 600; color: #9ca3af; padding: 0 12px;
+        }
+        .player-cards {
+            max-width: 900px; margin: 12px auto 0;
+            display: flex; flex-wrap: wrap; gap: 12px; padding: 0 12px;
+        }
+        .player-card {
+            flex: 1 1 120px; max-width: 140px;
+            background: #1a1a1a; border: 1px solid #2a2a2a;
+            border-radius: 12px; padding: 14px 8px;
+            text-align: center; cursor: pointer;
+            transition: transform .2s, box-shadow .2s, border-color .2s;
+            color: #9ca3af; font-size: 0.78rem;
+        }
+        .player-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 6px 20px rgba(168,85,247,0.3);
+            border-color: #a855f7; color: #e9d5ff;
+        }
+        .player-card svg { margin-bottom: 8px; }
+
+        /* ── Download button ── */
+        .download-btn {
+            display: block; max-width: 900px; margin: 20px auto;
+            padding: 14px; text-align: center;
+            background: linear-gradient(90deg, #7c3aed, #ec4899);
+            border-radius: 12px; color: #fff; font-weight: 700;
+            font-size: 1rem; text-decoration: none;
+            transition: opacity .2s, transform .2s;
+        }
+        .download-btn:hover { opacity: .9; transform: translateY(-2px); color: #fff; }
+
+        /* ── Footer ── */
+        footer {
+            text-align: center; padding: 28px 12px;
+            margin-top: 40px; border-top: 1px solid #1f1f1f;
+            font-size: 0.78rem; color: #4b5563;
+        }
+    </style>
+</head>
+<body>
+
+<!-- Navbar -->
+<nav class="navbar-custom d-flex align-items-center justify-content-between">
+    <span class="brand-text">🎬 File Store</span>
+    <a href="https://telegram.me/{{ bot_username }}" target="_blank"
+       class="text-sm text-purple-400 hover:text-purple-300 no-underline">
+        Open Bot ↗
+    </a>
+</nav>
+
+<!-- File title -->
+<div class="file-title" title="{{ file_name }}">{{ file_name }}</div>
+
+<!-- Info bar -->
+<div class="info-bar">
+    <span>📦 {{ file_size }}</span>
+    <span>🎞 {{ mime_type }}</span>
+</div>
+
+<!-- Player -->
+<div class="player-wrapper" style="margin-top:20px;">
+    {% if media_type == "video" %}
+    <video id="player" playsinline controls>
+        <source src="{{ file_url }}" type="{{ mime_type }}">
+    </video>
+    {% elif media_type == "audio" %}
+    <audio id="player" controls>
+        <source src="{{ file_url }}" type="{{ mime_type }}">
+    </audio>
+    {% else %}
+    <!-- Non-media fallback: just offer download -->
+    <div style="padding:40px; text-align:center; background:#111; border-radius:14px;">
+        <p style="font-size:3rem;">📄</p>
+        <p style="color:#9ca3af;">This file type cannot be previewed in the browser.</p>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Notice -->
+<div class="notice">
+    ⚠️ If the video doesn't play, your browser may not support this codec. Try an external player or download directly.
+</div>
+
+{% if media_type in ["video", "audio"] %}
+<!-- Play with... -->
+<div class="play-with-title">▶ Play with external app</div>
+<div class="player-cards">
+
+    <div class="player-card" onclick="openVlc()">
+        <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 64 64">
+            <linearGradient id="vlc1" x1="32" x2="32" y1="7" y2="57" gradientUnits="userSpaceOnUse">
+                <stop offset="0" stop-color="#f97316"/><stop offset="1" stop-color="#ea580c"/>
+            </linearGradient>
+            <path fill="url(#vlc1)" d="M32 7 L8 54 L56 54 Z M32 22 L46 48 L18 48 Z"/>
+        </svg>
+        VLC Player
+    </div>
+
+    <div class="player-card" onclick="openMx()">
+        <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 64 64">
+            <circle cx="32" cy="32" r="28" fill="#1c1c1c" stroke="#a855f7" stroke-width="2"/>
+            <path fill="#a855f7" d="M24 20 L24 44 L44 32 Z"/>
+        </svg>
+        MX Player
+    </div>
+
+    <div class="player-card" onclick="openKm()">
+        <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 64 64">
+            <linearGradient id="km1" x1="10" x2="54" y1="10" y2="54" gradientUnits="userSpaceOnUse">
+                <stop offset="0" stop-color="#6366f1"/><stop offset="1" stop-color="#8b5cf6"/>
+            </linearGradient>
+            <path fill="url(#km1)" d="M10 15 L10 49 L34 32 Z M34 32 L54 15 L54 49 Z"/>
+        </svg>
+        KM Player
+    </div>
+
+    <div class="player-card" onclick="openPlayit()">
+        <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 48 48">
+            <circle cx="24" cy="24" r="20" fill="none" stroke="#22abbd" stroke-width="2"/>
+            <path fill="none" stroke="#22abbd" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M18 16 L18 32 L32 24 Z"/>
+        </svg>
+        PlayIt
+    </div>
+
+    <div class="player-card" onclick="openSplayer()">
+        <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 64 64">
+            <linearGradient id="sp1" x1="10" x2="54" y1="10" y2="54" gradientUnits="userSpaceOnUse">
+                <stop offset="0" stop-color="#1a6dff"/><stop offset="1" stop-color="#c822ff"/>
+            </linearGradient>
+            <path fill="url(#sp1)" d="M10 15 L10 49 L25 32 M25 32 L54 15 L54 49 L25 32"/>
+        </svg>
+        S Player
+    </div>
+
+    <div class="player-card" onclick="openHd()">
+        <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 512 512">
+            <polygon fill="#fff" points="187,146 187,356 383,251"/>
+            <path fill="#ef4444" d="M256,0C114,0,0,114,0,256S114,512,256,512S512,398,512,256S398,0,256,0z M184,146l196,105L184,356V146z"/>
+        </svg>
+        HD Player
+    </div>
+
+</div>
+{% endif %}
+
+<!-- Download button -->
+<a href="{{ file_url }}&download=1" class="download-btn" download>
+    ⬇️ Download File
+</a>
+
+<footer>
+    Powered by <strong style="color:#a855f7;">File Store Bot</strong> &nbsp;·&nbsp;
+    <a href="https://telegram.me/{{ bot_username }}" target="_blank"
+       style="color:#7c3aed;">@{{ bot_username }}</a>
+</footer>
+
+<!-- Scripts -->
+<script src="https://cdn.plyr.io/3.7.8/plyr.js"></script>
+<script>
+    // Init Plyr
+    const playerEl = document.getElementById('player');
+    if (playerEl) {
+        const player = new Plyr(playerEl, {
+            controls: [
+                'play-large','rewind','play','fast-forward',
+                'progress','current-time','duration',
+                'mute','volume','captions',
+                'settings','pip','airplay','download','fullscreen'
+            ]
+        });
+    }
+
+    // Derived direct stream URL (strip /watch/ prefix so external apps get the raw stream)
+    const streamUrl = "{{ file_url }}";
+
+    function openVlc()     { window.location.href = `vlc://${streamUrl}`; }
+    function openMx()      { window.location.href = `intent:${streamUrl}#Intent;package=com.mxtech.videoplayer.ad;end`; }
+    function openKm()      { window.location.href = `intent:${streamUrl}#Intent;package=com.kmplayer;end`; }
+    function openPlayit()  { window.location.href = `playit://playerv2/video?url=${streamUrl}`; }
+    function openSplayer() { window.location.href = `intent:${streamUrl}#Intent;action=com.young.simple.player.playback_online;package=com.young.simple.player;end`; }
+    function openHd()      { window.location.href = `intent:${streamUrl}#Intent;package=uplayer.video.player;end`; }
+
+    // Disable right-click & devtools shortcuts
+    document.addEventListener("contextmenu", e => e.preventDefault());
+    document.addEventListener('keydown', e => {
+        if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && e.key === 'I') ||
+            (e.ctrlKey && e.key === 'u')) e.preventDefault();
+    });
+</script>
+
+</body>
+</html>
