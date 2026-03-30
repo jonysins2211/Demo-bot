@@ -29,8 +29,8 @@ OWNER_ID = int(os.environ.get("OWNER_ID", "949657126")) # Owner id
 #--------------------------------------------
 PORT = os.environ.get("PORT", "8001")
 #--------------------------------------------
-DB_URI = os.environ.get("DATABASE_URL", "mongodb+srv://avatarr112200:6pnK1K3d1Gg9CaIW@cluster0.nmglsmd.mongodb.net/?appName=Cluster0")
-DB_NAME = os.environ.get("DATABASE_NAME", "avatar11220")
+DB_URI = os.environ.get("DATABASE_URL", "mongodb+srv://johnmawa:2.de5ckkYQVC#8f@cluster0.haayhop.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0")
+DB_NAME = os.environ.get("DATABASE_NAME", "johnmawa")
 #--------------------------------------------
 FSUB_LINK_EXPIRY = int(os.getenv("FSUB_LINK_EXPIRY", "10"))  # 0 means no expiry
 BAN_SUPPORT = os.environ.get("BAN_SUPPORT", "https://t.me/mladminbot")
@@ -109,6 +109,9 @@ PRICE2 = os.environ.get("PRICE2", "50 rs")
 #===================(END)========================#
 
 LOG_FILE_NAME = "filesharingbot.txt"
+
+# File Stream — set True to enable /stream/ endpoint and Stream/Download buttons
+STREAM_MODE = os.environ.get("STREAM_MODE", "True").lower() in ("true", "1", "yes")
 
 logging.basicConfig(
     level=logging.INFO,

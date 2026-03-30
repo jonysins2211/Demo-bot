@@ -20,3 +20,4 @@ shortzy
 aiofiles
 asyncio
 pycryptodome
+jinja2

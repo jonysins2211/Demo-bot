@@ -73,6 +73,12 @@ class Bot(Client):
         usr_bot_me = await self.get_me()
         self.uptime = get_indian_time()
 
+        # --- FileStream: register this bot as the primary streaming client ---
+        from FileStream.bot import multi_clients, work_loads
+        multi_clients[0] = self
+        work_loads[0] = 0
+        self.LOGGER(__name__).info("FileStream: streaming client registered.")
+
         try:
             db_channel = await self.get_chat(CHANNEL_ID)
             self.db_channel = db_channel
